@@ -41,8 +41,8 @@
 
 #define CONFIG_FILE "/etc/audisp/audisp-cef.conf"
 //This is the maximum arg len for commands before truncating. Syslog often will otherwise truncate the msg.
-#define MAX_ARG_LEN 512
-#define MAX_ATTR_SIZE 1023
+#define MAX_ARG_LEN 1024
+#define MAX_ATTR_SIZE 2048
 #define MAX_EXTRA_ATTR_SIZE 128
 #define BUF_SIZE 32
 //Bump when the message is modified
