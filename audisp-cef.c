@@ -422,6 +422,7 @@ static void handle_event(auparse_state_t *au,
 				if (cwd) {
 					auparse_interpret_field(au);
 					add_extra_record(au, extra, "cwd");
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "filePath=", auparse_find_field(au, "cwd"));
 				}
 				break;
 			case AUDIT_PATH:
