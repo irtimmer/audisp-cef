@@ -303,7 +303,7 @@ void syslog_cef_msg(struct cef_msg_type cef_msg)
 	attr_t *prev;
 	char msg[1500];
 
-	snprintf(msg, 1500, "%s|%s|%s|%u|%s|%s|%u|end=%ld ", cef_msg.hdr, cef_msg.type, cef_msg.app,
+	snprintf(msg, 1500, "%s|%s|%s|%u|%s|%s|%u|end=%ld.000 ", cef_msg.hdr, cef_msg.type, cef_msg.app,
 		cef_msg.version, cef_msg.msgname, cef_msg.msgdesc, cef_msg.severity, cef_msg.au_time);
 	while (head) {
 			snprintf(msg+strlen(msg), 1500, "%s", head->val);
