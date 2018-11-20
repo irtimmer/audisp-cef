@@ -517,6 +517,9 @@ static void handle_event(auparse_state_t *au,
 				cef_msg.attr = cef_add_attr(cef_msg.attr, "cs3Label=AuditKey cs3=", auparse_find_field(au, "key"));
 				goto_record_type(au, type);
 
+				cef_msg.attr = cef_add_attr(cef_msg.attr, "eventOutcome=", auparse_find_field(au, "success"));
+				goto_record_type(au, type);
+
 				if (auparse_find_field(au, "ppid"))
 					cef_msg.attr = cef_add_attr(cef_msg.attr, "cs5Label=ParentProcess cs5=", get_proc_name(auparse_get_field_int(au)));
 				goto_record_type(au, type);
