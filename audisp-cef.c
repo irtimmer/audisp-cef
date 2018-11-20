@@ -328,7 +328,7 @@ static void handle_event(auparse_state_t *au,
 		.severity	= 3,
 	};
 
-	const char *cwd = NULL, *argc = NULL, *cmd = NULL;
+	const char *cwd = NULL, *argc = NULL, *cmd = NULL, *nametype = NULL;
 	const char *sys;
 	const char *syscall = NULL;
 	char fullcmd[MAX_ARG_LEN+1] = "\0";
@@ -426,6 +426,16 @@ static void handle_event(auparse_state_t *au,
 				}
 				break;
 			case AUDIT_PATH:
+				nametype = auparse_find_field(au, "nametype");
+				if (!nametype) {
+					auparse_goto_record_num(au, num);
+					nametype = auparse_find_field(au, "objtype");
+				}
+
+				if (!nametype || strncmp(nametype, "PARENT", 6) == 0)
+					break;
+
+				auparse_goto_record_num(au, num);
 				cef_msg.attr = cef_add_attr(cef_msg.attr, "fname=", auparse_find_field(au, "name"));
 				goto_record_type(au, type);
 
