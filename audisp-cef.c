@@ -42,7 +42,7 @@
 #define CONFIG_FILE "/etc/audisp/audisp-cef.conf"
 //This is the maximum arg len for commands before truncating. Syslog often will otherwise truncate the msg.
 #define MAX_ARG_LEN 1024
-#define MAX_ATTR_SIZE 2048
+#define MAX_ATTR_SIZE 2047
 #define MAX_EXTRA_ATTR_SIZE 128
 #define BUF_SIZE 32
 //Bump when the message is modified
@@ -58,7 +58,7 @@ static auparse_state_t *au = NULL;
 static int machine = -1;
 
 typedef struct	ll {
-	char val[1024];
+	char val[MAX_ATTR_SIZE + 1];
 	struct ll *next;
 } attr_t;
 
