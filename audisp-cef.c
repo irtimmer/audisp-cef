@@ -479,7 +479,7 @@ static void handle_event(auparse_state_t *au,
 					havecef = i;
 					cef_msg.msgname = "CHMOD";
 					cef_msg.msgdesc = "Change file mode";
-				} else if (!strncmp(sys, "chown", 5)) {
+				} else if (!strncmp(sys, "chown", 5) || !strncmp(sys, "fchown", 5)) {
 					havecef = i;
 					cef_msg.msgname = "CHOWN";
 					cef_msg.msgdesc = "Change file owner";
