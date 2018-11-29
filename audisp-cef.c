@@ -467,10 +467,16 @@ static void handle_event(auparse_state_t *au,
 					return;
 				}
 
-				if (!strncmp(sys, "write", 5) || !strncmp(sys, "open", 4) || !strncmp(sys, "unlink", 6)) {
+				if (!strncmp(sys, "write", 5) || !strncmp(sys, "unlink", 6)) {
 					havecef = i;
 					cef_msg.msgname = "WRITE";
 					cef_msg.msgdesc = "Write or append to file";
+				} else if (!strncmp(sys, "read", 4) || !strncmp(sys, "open", 4) || !strncmp(sys, "link", 4) ||
+						!strncmp(sys, "mmap", 4) || !strncmp(sys, "mmap2", 5) || !strncmp(sys, "sendfile", 8) || 
+						!strncmp(sys, "sendfile64", 10)) {
+					havecef = i;
+					cef_msg.msgname = "READ";
+					cef_msg.msgdesc = "Read file";
 				} else if (!strncmp(sys, "setxattr", 8)) {
 					havecef = i;
 					cef_msg.msgname = "ATTR";
