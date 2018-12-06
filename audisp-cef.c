@@ -485,7 +485,7 @@ static void handle_event(auparse_state_t *au,
 						cef_msg.msgname = "READ";
 						cef_msg.msgdesc = "Read file";
 					}
-					cef_msg.attr = cef_add_attr(cef_msg.attr, "cs6Label=Flags cs6=", auparse_interpret_field(au));
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "cs2Label=Flags cs2=", auparse_interpret_field(au));
 				} else if (!strncmp(sys, "write", 5) || !strncmp(sys, "unlink", 6)) {
 					havecef = i;
 					cef_msg.msgname = "WRITE";
