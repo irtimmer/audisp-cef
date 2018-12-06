@@ -339,6 +339,7 @@ static void handle_event(auparse_state_t *au,
 
 	char f[8];
 	int len, tmplen;
+	unsigned int arg;
 	int argcount, i;
 	int havecef = 0;
 
@@ -469,7 +470,18 @@ static void handle_event(auparse_state_t *au,
 					return;
 				}
 
-				if (!strncmp(sys, "write", 5) || !strncmp(sys, "unlink", 6)) {
+				if (!strncmp(sys, "open", 4)) {
+					havecef = i;
+					arg = strtoul(auparse_find_field(au, "a1"), NULL, 16);
+					if (arg & O_WRONLY || arg & O_RDWR) {
+						cef_msg.msgname = "WRITE";
+						cef_msg.msgdesc = "Write or append to file";
+					} else {
+						cef_msg.msgname = "READ";
+						cef_msg.msgdesc = "Read file";
+					}
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "cs6Label=Flags cs6=", auparse_interpret_field(au));
+				} else if (!strncmp(sys, "write", 5) || !strncmp(sys, "unlink", 6)) {
 					havecef = i;
 					cef_msg.msgname = "WRITE";
 					cef_msg.msgdesc = "Write or append to file";
