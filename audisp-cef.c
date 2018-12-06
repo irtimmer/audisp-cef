@@ -329,7 +329,7 @@ static void handle_event(auparse_state_t *au,
 		.severity	= 3,
 	};
 
-	const char *cwd = NULL, *argc = NULL, *cmd = NULL, *nametype = NULL;
+	const char *cwd = NULL, *argc = NULL, *cmd = NULL, *nametype = NULL, *saddr = NULL;
 	const char *sys;
 	const char *reason;
 	const char *syscall = NULL;
@@ -456,6 +456,11 @@ static void handle_event(auparse_state_t *au,
 				add_extra_record(au, extra, "rdev");
 				goto_record_type(au, type);
 				break;
+			case AUDIT_SOCKADDR:
+				saddr = auparse_find_field(au, "saddr");
+				cef_msg.attr = cef_add_attr(cef_msg.attr, "dst=", auparse_interpret_sock_address(au));
+				cef_msg.attr = cef_add_attr(cef_msg.attr, "dport=", auparse_interpret_sock_port(au));
+				break;
 			case AUDIT_SYSCALL:
 				syscall = auparse_find_field(au, "syscall");
 				if (!syscall) {
@@ -531,6 +536,10 @@ static void handle_event(auparse_state_t *au,
 					havecef = i;
 					cef_msg.msgname = "SYMLINK";
 					cef_msg.msgdesc = "Symbolic link";
+				} else if (!strncmp(sys, "connect", 7)) {
+					havecef = i;
+					cef_msg.msgname = "CONNECT";
+					cef_msg.msgdesc = "Connect to socket";
 				} else {
 					syslog(LOG_INFO, "Unhandled system call %u %s", i, sys);
 				}
