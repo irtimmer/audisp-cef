@@ -72,6 +72,7 @@ char	*msgdesc;
 int	severity;
 struct	ll *attr;
 time_t	au_time;
+unsigned int au_milli;
 };
 
 static void handle_event(auparse_state_t *au,
@@ -303,8 +304,8 @@ void syslog_cef_msg(struct cef_msg_type cef_msg)
 	attr_t *prev;
 	char msg[1500];
 
-	snprintf(msg, 1500, "%s|%s|%s|%u|%s|%s|%u|end=%ld.000 ", cef_msg.hdr, cef_msg.type, cef_msg.app,
-		cef_msg.version, cef_msg.msgname, cef_msg.msgdesc, cef_msg.severity, cef_msg.au_time);
+	snprintf(msg, 1500, "%s|%s|%s|%u|%s|%s|%u|end=%ld.%03d ", cef_msg.hdr, cef_msg.type, cef_msg.app,
+		cef_msg.version, cef_msg.msgname, cef_msg.msgdesc, cef_msg.severity, cef_msg.au_time, cef_msg.au_milli);
 	while (head) {
 			snprintf(msg+strlen(msg), 1500-strlen(msg), "%s", head->val);
 			prev = head;
@@ -350,6 +351,7 @@ static void handle_event(auparse_state_t *au,
 		rc = 0;
 		auparse_first_field(au);
 		cef_msg.au_time = auparse_get_time(au);
+		cef_msg.au_milli = auparse_get_milli(au);
 		switch (type) {
 		   	case AUDIT_AVC:
 				argc = auparse_find_field(au, "apparmor");
