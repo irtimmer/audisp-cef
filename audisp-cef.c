@@ -554,7 +554,7 @@ static void handle_event(auparse_state_t *au,
 				}
 				goto_record_type(au, type);
 
-				cef_msg.attr = cef_add_attr(cef_msg.attr, "eventOutcome=", auparse_find_field(au, "success"));
+				cef_msg.attr = cef_add_attr(cef_msg.attr, "outcome=", auparse_find_field(au, "success"));
 				goto_record_type(au, type);
 
 				if (auparse_find_field(au, "ppid"))
