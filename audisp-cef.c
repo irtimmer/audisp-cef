@@ -440,6 +440,7 @@ static void handle_event(auparse_state_t *au,
 					break;
 
 				auparse_goto_record_num(au, num);
+				auparse_first_field(au);
 				cef_msg.attr = cef_add_attr(cef_msg.attr, "fname=", auparse_find_field(au, "name"));
 				goto_record_type(au, type);
 
