@@ -340,38 +340,6 @@ static void handle_event(auparse_state_t *au,
 		cef_msg.au_time = auparse_get_time(au);
 		cef_msg.au_milli = auparse_get_milli(au);
 		switch (type) {
-		   	case AUDIT_AVC:
-				argc = auparse_find_field(au, "apparmor");
-				if (!argc)
-					return;
-
-				havecef = 1;
-				cef_msg.msgname = "AVC_APPARMOR";
-
-				cef_msg.attr = cef_add_attr(cef_msg.attr, "cs1Label=Result cs1=", auparse_get_field_str(au));
-				goto_record_type(au, type);
-
-				cef_msg.msgdesc = unescape(auparse_find_field(au, "info"));
-				goto_record_type(au, type);
-
-				cef_msg.attr = cef_add_attr(cef_msg.attr, "cs2Label=Operation cs2=", auparse_find_field(au, "operation"));
-				goto_record_type(au, type);
-
-				cef_msg.attr = cef_add_attr(cef_msg.attr, "cs3Label=Profile cs3=", auparse_find_field(au, "profile"));
-				goto_record_type(au, type);
-
-				cef_msg.attr = cef_add_attr(cef_msg.attr, "cs4Label=Command cs4=", auparse_find_field(au, "comm"));
-				goto_record_type(au, type);
-
-				if (auparse_find_field(au, "parent"))
-					cef_msg.attr = cef_add_attr(cef_msg.attr, "sproc=", get_proc_name(auparse_get_field_int(au)));
-				goto_record_type(au, type);
-
-				if (auparse_find_field(au, "pid"))
-					cef_msg.attr = cef_add_attr(cef_msg.attr, "dproc=", get_proc_name(auparse_get_field_int(au)));
-				goto_record_type(au, type);
-
-				break;
 			case AUDIT_EXECVE:
 				argc = auparse_find_field(au, "argc");
 				if (argc)
