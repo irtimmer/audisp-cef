@@ -43,7 +43,6 @@
 //This is the maximum arg len for commands before truncating. Syslog often will otherwise truncate the msg.
 #define MAX_ARG_LEN 1024
 #define MAX_ATTR_SIZE 2047
-#define MAX_EXTRA_ATTR_SIZE 128
 #define BUF_SIZE 32
 //Bump when the message is modified
 #define CEF_AUDIT_MESSAGE_VERSION 2
@@ -175,17 +174,6 @@ int main(int argc, char *argv[])
 	auparse_destroy(au);
 	free_config(&config);
 
-	return 0;
-}
-
-int add_extra_record(auparse_state_t *au, char *extra, char *attr)
-{
-	size_t len = strlen(extra);
-	size_t attr_len = strlen(attr) ? MAX_EXTRA_ATTR_SIZE:MAX_EXTRA_ATTR_SIZE;
-
-	if ((len+attr_len) > MAX_ATTR_SIZE)
-		return 1;
-	snprintf(extra+len, attr_len, " %s\\=%s", attr, auparse_find_field(au, attr));
 	return 0;
 }
 
@@ -335,7 +323,6 @@ static void handle_event(auparse_state_t *au,
 	const char *syscall = NULL;
 	char fullcmd[MAX_ARG_LEN+1] = "\0";
 	char fullcmdt[5] = "No\0";
-	char extra[MAX_ARG_LEN] = "\0";
 
 	char f[8];
 	int len, tmplen;
@@ -347,7 +334,6 @@ static void handle_event(auparse_state_t *au,
 		return;
 
 	while (auparse_goto_record_num(au, num) > 0) {
-		extra[0] = '\0';
 		type = auparse_get_type(au);
 		rc = 0;
 		auparse_first_field(au);
@@ -385,14 +371,6 @@ static void handle_event(auparse_state_t *au,
 					cef_msg.attr = cef_add_attr(cef_msg.attr, "dproc=", get_proc_name(auparse_get_field_int(au)));
 				goto_record_type(au, type);
 
-				add_extra_record(au, extra, "error");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "name");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "srcname");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "flags");
-				goto_record_type(au, type);
 				break;
 			case AUDIT_EXECVE:
 				argc = auparse_find_field(au, "argc");
@@ -423,11 +401,9 @@ static void handle_event(auparse_state_t *au,
 				break;
 			case AUDIT_CWD:
 				cwd = auparse_find_field(au, "cwd");
-				if (cwd) {
-					auparse_interpret_field(au);
-					add_extra_record(au, extra, "cwd");
-					cef_msg.attr = cef_add_attr(cef_msg.attr, "filePath=", auparse_find_field(au, "cwd"));
-				}
+				if (cwd)
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "filePath=", cwd);
+
 				break;
 			case AUDIT_PATH:
 				nametype = auparse_find_field(au, "nametype");
@@ -444,18 +420,6 @@ static void handle_event(auparse_state_t *au,
 				cef_msg.attr = cef_add_attr(cef_msg.attr, "fname=", auparse_find_field(au, "name"));
 				goto_record_type(au, type);
 
-				add_extra_record(au, extra, "inode");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "dev");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "mode");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "ouid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "ogid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "rdev");
-				goto_record_type(au, type);
 				break;
 			case AUDIT_SOCKADDR:
 				saddr = auparse_find_field(au, "saddr");
@@ -579,24 +543,6 @@ static void handle_event(auparse_state_t *au,
 				cef_msg.attr = cef_add_attr(cef_msg.attr, "dproc=", auparse_find_field(au, "exe"));
 				goto_record_type(au, type);
 
-				add_extra_record(au, extra, "pid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "gid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "euid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "suid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "fsuid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "egid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "sgid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "fsgid");
-				goto_record_type(au, type);
-				add_extra_record(au, extra, "ses");
-				goto_record_type(au, type);
 				break;
 			default:
 				break;
@@ -609,11 +555,6 @@ static void handle_event(auparse_state_t *au,
 		return;
 	}
 
-	if (strlen(extra) >= MAX_ARG_LEN) {
-		extra[MAX_ARG_LEN] = '\0';
-		cef_msg.attr = cef_add_attr(cef_msg.attr, "cs6Label=MsgTruncated cs6=", "Yes");
-	}
-	cef_msg.attr = cef_add_attr(cef_msg.attr, "msg=", extra);
 	cef_msg.attr = cef_add_attr(cef_msg.attr, "dhost=", hostname);
 	//This also frees cef_msg.attr
 	syslog_cef_msg(cef_msg);
