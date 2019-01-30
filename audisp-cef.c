@@ -45,7 +45,7 @@
 #define MAX_ATTR_SIZE 2047
 #define BUF_SIZE 32
 //Bump when the message is modified
-#define CEF_AUDIT_MESSAGE_VERSION 2
+#define CEF_AUDIT_MESSAGE_VERSION 3
 
 extern int h_errno;
 
@@ -487,16 +487,18 @@ static void handle_event(auparse_state_t *au,
 				}
 				goto_record_type(au, type);
 
-				cef_msg.attr = cef_add_attr(cef_msg.attr, "outcome=", auparse_find_field(au, "success"));
+				cef_msg.attr = cef_add_attr(cef_msg.attr, "outcome=", strdupa(strcmp(auparse_find_field(au, "success"), "yes") == 0 ? "success" : "failure"));
 				goto_record_type(au, type);
 
-				if (auparse_find_field(au, "ppid"))
-					cef_msg.attr = cef_add_attr(cef_msg.attr, "cs5Label=ParentProcess cs5=", get_proc_name(auparse_get_field_int(au)));
+				if (auparse_find_field(au, "ppid")) {
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "sproc=", get_proc_name(auparse_get_field_int(au)));
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "spid=", auparse_get_field_str(au));
+				}
 				goto_record_type(au, type);
 
 				if (auparse_find_field(au, "auid")) {
 					cef_msg.attr = cef_add_attr(cef_msg.attr, "suser=", get_username(auparse_get_field_int(au)));
-					cef_msg.attr = cef_add_attr(cef_msg.attr, "cn1Label=auid cn1=",  auparse_get_field_str(au));
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "suid=",  auparse_get_field_str(au));
 				}
 				goto_record_type(au, type);
 
@@ -508,7 +510,11 @@ static void handle_event(auparse_state_t *au,
 
 				cef_msg.attr = cef_add_attr(cef_msg.attr, "cs4Label=TTY cs4=", auparse_find_field(au, "tty"));
 				goto_record_type(au, type);
+				cef_msg.attr = cef_add_attr(cef_msg.attr, "dpid=", auparse_find_field(au, "pid"));
+				goto_record_type(au, type);
 				cef_msg.attr = cef_add_attr(cef_msg.attr, "dproc=", auparse_find_field(au, "exe"));
+				goto_record_type(au, type);
+				cef_msg.attr = cef_add_attr(cef_msg.attr, "cs5Label=CommandName cs5=", auparse_find_field(au, "comm"));
 				goto_record_type(au, type);
 
 				break;
