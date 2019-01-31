@@ -66,7 +66,7 @@ char	*hdr;
 char	*type;
 char	*app;
 int	version;
-char	*msgname;
+const char	*msgname;
 char	*msgdesc;
 int	severity;
 struct	ll *attr;
@@ -106,6 +106,20 @@ unsigned int strstok(char *in, char c)
 		len++;
 	len++;
 	return len;
+}
+
+/* convert string to upper case */
+char* strupr(char *string)
+{
+	char *p = string;
+	while(*p) {
+       	if (*p >= 'a' && *p <= 'z')
+        	*p = *p - 32;
+
+       	p++;
+   	}
+
+	return string;
 }
 
 int main(int argc, char *argv[])
@@ -293,7 +307,7 @@ void syslog_cef_msg(struct cef_msg_type cef_msg)
 	char msg[1500];
 
 	snprintf(msg, 1500, "%s|%s|%s|%u|%s|%s|%u|end=%ld.%03d ", cef_msg.hdr, cef_msg.type, cef_msg.app,
-		cef_msg.version, cef_msg.msgname, cef_msg.msgdesc, cef_msg.severity, cef_msg.au_time, cef_msg.au_milli);
+		cef_msg.version, strupr(strdupa(cef_msg.msgname)), cef_msg.msgdesc, cef_msg.severity, cef_msg.au_time, cef_msg.au_milli);
 	while (head) {
 			snprintf(msg+strlen(msg), 1500-strlen(msg), "%s", head->val);
 			prev = head;
@@ -409,7 +423,6 @@ static void handle_event(auparse_state_t *au,
 				}
 
 				if (!strncmp(sys, "open", 4)) {
-					havecef = i;
 					arg = strtoul(auparse_find_field(au, "a1"), NULL, 16);
 					if (arg & O_WRONLY || arg & O_RDWR) {
 						cef_msg.msgname = "WRITE";
@@ -419,64 +432,12 @@ static void handle_event(auparse_state_t *au,
 						cef_msg.msgdesc = "Read file";
 					}
 					cef_msg.attr = cef_add_attr(cef_msg.attr, "cs2Label=Flags cs2=", auparse_interpret_field(au));
-				} else if (!strncmp(sys, "write", 5) || !strncmp(sys, "unlink", 6)) {
-					havecef = i;
-					cef_msg.msgname = "WRITE";
-					cef_msg.msgdesc = "Write or append to file";
-				} else if (!strncmp(sys, "read", 4) || !strncmp(sys, "open", 4) || !strncmp(sys, "link", 4) ||
-						!strncmp(sys, "mmap", 4) || !strncmp(sys, "mmap2", 5) || !strncmp(sys, "sendfile", 8) || 
-						!strncmp(sys, "sendfile64", 10)) {
-					havecef = i;
-					cef_msg.msgname = "READ";
-					cef_msg.msgdesc = "Read file";
-				} else if (!strncmp(sys, "setxattr", 8)) {
-					havecef = i;
-					cef_msg.msgname = "ATTR";
-					cef_msg.msgdesc = "Change file attributes";
-				} else if (!strncmp(sys, "chmod", 5)) {
-					havecef = i;
-					cef_msg.msgname = "CHMOD";
-					cef_msg.msgdesc = "Change file mode";
-				} else if (!strncmp(sys, "chown", 5) || !strncmp(sys, "fchown", 5)) {
-					havecef = i;
-					cef_msg.msgname = "CHOWN";
-					cef_msg.msgdesc = "Change file owner";
-				} else if (!strncmp(sys, "ptrace",  6)) {
-					havecef = i;
-					cef_msg.msgname = "PTRACE";
-					cef_msg.msgdesc = "Process tracing";
-				} else if (!strncmp(sys, "execve", 6)) {
-					havecef = i;
-					cef_msg.msgname = "EXECVE";
-					cef_msg.msgdesc = "Unix Exec";
-				} else if (!strncmp(sys, "adjtimex", 8)) {
-					havecef = i;
-					cef_msg.msgname = "ADJTIMEX";
-					cef_msg.msgdesc = "Time synchronize";
-				} else if (!strncmp(sys, "rename", 7)) {
-					havecef = i;
-					cef_msg.msgname = "RENAME";
-					cef_msg.msgdesc = "rename";
-				} else if (!strncmp(sys, "mknod", 5)) {
-					havecef = i;
-					cef_msg.msgname = "MKNOD";
-					cef_msg.msgdesc = "mknod";
-				} else if (!strncmp(sys, "rmdir", 5)) {
-					havecef = i;
-					cef_msg.msgname = "RMDIR";
-					cef_msg.msgdesc = "rmdir";
-				} else if (!strncmp(sys, "symlink", 7)) {
-					havecef = i;
-					cef_msg.msgname = "SYMLINK";
-					cef_msg.msgdesc = "Symbolic link";
-				} else if (!strncmp(sys, "connect", 7)) {
-					havecef = i;
-					cef_msg.msgname = "CONNECT";
-					cef_msg.msgdesc = "Connect to socket";
 				} else {
-					syslog(LOG_INFO, "Unhandled system call %u %s", i, sys);
+					cef_msg.msgname = sys;
+					cef_msg.msgdesc = "Syscall called";
 				}
 
+				havecef = i;
 				cef_msg.attr = cef_add_attr(cef_msg.attr, "cs3Label=AuditKey cs3=", auparse_find_field(au, "key"));
 				goto_record_type(au, type);
 
