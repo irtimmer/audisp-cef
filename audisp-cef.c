@@ -157,12 +157,12 @@ int main(int argc, char *argv[])
 	nodename[64] = '\0';
 	ht = gethostbyname(nodename);
 	if (ht == NULL) {
-		hostname = strdup("localhost");
+		hostname = "localhost";
 		syslog(LOG_ALERT,
 			"gethostbyname could not find machine hostname, please fix this. Using %s as fallback. Error: %s",
 			hostname, hstrerror(h_errno));
 	} else {
-		hostname = strdup(ht->h_name);
+		hostname = ht->h_name;
 	}
 
 	au = auparse_init(AUSOURCE_FEED, 0);
