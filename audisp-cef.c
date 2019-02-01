@@ -55,6 +55,9 @@ static cef_conf_t config;
 static char *hostname = NULL;
 static auparse_state_t *au = NULL;
 static int machine = -1;
+//Temporarly buffer for storing retreived fields
+static char *internal_buffer;
+static size_t internal_buffer_size;
 
 typedef struct	ll {
 	char val[MAX_ATTR_SIZE + 1];
@@ -139,6 +142,12 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "FATAL: Could not read configuration file: %s", CONFIG_FILE);
 		return 1;
 	}
+
+	internal_buffer_size = sysconf(_SC_GETPW_R_SIZE_MAX);
+	if (internal_buffer_size < 64)
+		internal_buffer_size = 16384;
+
+	internal_buffer = (char *)alloca(internal_buffer_size);
 
 	openlog("audisp-cef", LOG_CONS, config.facility);
 
@@ -251,43 +260,34 @@ attr_t *cef_add_attr(attr_t *list, const char *st, const char *val)
 
 char *get_username(int uid)
 {
-	size_t bufsize;
-	char *buf;
 	char *name;
 	struct passwd pwd;
 	struct passwd *result;
 
-	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if (bufsize == -1)
-			bufsize = 16384;
-	buf = (char *)alloca(bufsize);
-
 	if (uid == -1) {
 		return NULL;
 	}
-	if (getpwuid_r(uid, &pwd, buf, bufsize, &result) != 0) {
+	if (getpwuid_r(uid, &pwd, internal_buffer, internal_buffer_size, &result) != 0) {
 		return NULL;
 	}
 	if (result == NULL) {
 		return NULL;
 	}
-	name = strdupa(pwd.pw_name);
-	return name;
+	return pwd.pw_name;
 }
 
 char *get_proc_name(int pid)
 {
 	char p[1024];
-	static char proc[64];
 	FILE *fp;
 	snprintf(p, 512, "/proc/%d/status", pid);
 	fp = fopen(p, "r");
 	if (fp) {
-		fscanf(fp, "Name: %63s", proc);
+		fscanf(fp, "Name: %63s", internal_buffer);
 		fclose(fp);
 	} else
 		return NULL;
-	return proc;
+	return internal_buffer;
 }
 
 void cef_del_attrs(attr_t *head)
