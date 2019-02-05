@@ -35,6 +35,7 @@
 #include <netdb.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <limits.h>
 #include "libaudit.h"
 #include "auparse.h"
 #include "cef-config.h"
@@ -143,10 +144,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	internal_buffer_size = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if (internal_buffer_size < 64)
-		internal_buffer_size = 16384;
-
+	internal_buffer_size = PATH_MAX;
 	internal_buffer = (char *)alloca(internal_buffer_size);
 
 	openlog("audisp-cef", LOG_CONS, config.facility);
@@ -290,6 +288,17 @@ char *get_proc_name(int pid)
 	return internal_buffer;
 }
 
+const char *get_resolvepath(const char* cwd, const char* relative_path)
+{
+	char path[PATH_MAX];
+	if (cwd && relative_path[0] != '/') {
+		snprintf(path, PATH_MAX, "%s/%s", cwd, relative_path);
+		realpath(path, internal_buffer);
+		return internal_buffer;
+	} else
+		return relative_path;
+}
+
 void cef_del_attrs(attr_t *head)
 {
 	attr_t *prev;
@@ -400,7 +409,7 @@ static void handle_event(auparse_state_t *au,
 				auparse_goto_record_num(au, num);
 				auparse_first_field(au);
 				auparse_find_field(au, "name");
-				cef_msg.attr = cef_add_attr(cef_msg.attr, "fname=", auparse_interpret_field(au));
+				cef_msg.attr = cef_add_attr(cef_msg.attr, "fname=", get_resolvepath(cwd, auparse_interpret_field(au)));
 				goto_record_type(au, type);
 
 				break;
