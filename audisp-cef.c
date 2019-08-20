@@ -45,6 +45,7 @@
 #define MAX_ARG_LEN 1024
 #define MAX_ATTR_SIZE 2047
 #define BUF_SIZE 32
+#define USER_BUFFER_SIZE 1024
 //Bump when the message is modified
 #define CEF_AUDIT_MESSAGE_VERSION 3
 
@@ -59,6 +60,11 @@ static int machine = -1;
 //Temporarly buffer for storing retreived fields
 static char *internal_buffer;
 static size_t internal_buffer_size;
+
+static char source_user_buffer[USER_BUFFER_SIZE];
+static char target_user_buffer[USER_BUFFER_SIZE];
+static struct passwd source_user;
+static struct passwd target_user;
 
 typedef struct	ll {
 	char val[MAX_ATTR_SIZE + 1];
@@ -138,6 +144,9 @@ int main(int argc, char *argv[])
 	sa.sa_handler = term_handler;
 	sigaction(SIGTERM, &sa, NULL);
 	sa.sa_handler = hup_handler;
+
+	source_user.pw_uid = -1;
+	target_user.pw_uid = -1;
 
 	if (load_config(&config, CONFIG_FILE)) {
 		fprintf(stderr, "FATAL: Could not read configuration file: %s", CONFIG_FILE);
@@ -256,22 +265,24 @@ attr_t *cef_add_attr(attr_t *list, const char *st, const char *val)
 	return new;
 }
 
-char *get_username(int uid)
+char *get_username(int uid, struct passwd *pwd, char* buf)
 {
 	char *name;
-	struct passwd pwd;
 	struct passwd *result;
 
 	if (uid == -1) {
 		return NULL;
 	}
-	if (getpwuid_r(uid, &pwd, internal_buffer, internal_buffer_size, &result) != 0) {
+	if (pwd->pw_uid == uid) {
+		return pwd->pw_name;
+	}
+	if (getpwuid_r(uid, pwd, buf, USER_BUFFER_SIZE, &result) != 0) {
 		return NULL;
 	}
 	if (result == NULL) {
 		return NULL;
 	}
-	return pwd.pw_name;
+	return pwd->pw_name;
 }
 
 char *get_proc_name(int pid)
@@ -468,13 +479,13 @@ static void handle_event(auparse_state_t *au,
 				goto_record_type(au, type);
 
 				if (auparse_find_field(au, "auid")) {
-					cef_msg.attr = cef_add_attr(cef_msg.attr, "suser=", get_username(auparse_get_field_int(au)));
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "suser=", get_username(auparse_get_field_int(au), &source_user, source_user_buffer));
 					cef_msg.attr = cef_add_attr(cef_msg.attr, "suid=",  auparse_get_field_str(au));
 				}
 				goto_record_type(au, type);
 
 				if (auparse_find_field(au, "uid")) {
-					cef_msg.attr = cef_add_attr(cef_msg.attr, "duser=", get_username(auparse_get_field_int(au)));
+					cef_msg.attr = cef_add_attr(cef_msg.attr, "duser=", get_username(auparse_get_field_int(au), &target_user, target_user_buffer));
 					cef_msg.attr = cef_add_attr(cef_msg.attr, "duid=", auparse_get_field_str(au));
 				}
 				goto_record_type(au, type);
